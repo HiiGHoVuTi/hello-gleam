@@ -1,6 +1,6 @@
-# hellogleam
+# Hello Gleam: Library
 
-A Gleam project
+A Gleam project trying to emulate different systems interacting.
 
 ## Quick start
 
@@ -10,15 +10,15 @@ rebar3 eunit
 
 # Run the Erlang REPL
 rebar3 shell
+> hellogleam:main().
 ```
 
-## Installation
+## Systems
 
-If [available in Hex](https://rebar3.org/docs/configuration/dependencies/#declaring-dependencies)
-this package can be installed by adding `hellogleam` to your `rebar.config` dependencies:
+### The Library
 
-```erlang
-{deps, [
-    hellogleam
-]}.
-```
+The library has a collection of books organised by categories, and you can order or return from it.
+
+### Clients
+
+Clients have a preference in book types, and will try to order a book in said category (for now they have no memory of what they have read).
