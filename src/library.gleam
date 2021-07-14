@@ -7,11 +7,11 @@ import gleam/otp/process
 import gleam/otp/actor
 
 pub type Book {
-  Book(name: String, id: Int, contents: String)
+  Book(name: String, category: String, id: Int, contents: String)
 }
 
 pub type State {
-  State(name: String, books: Map(String, Book))
+  State(name: String, books: Map(String, List(Book)))
 }
 
 pub type Message {
@@ -25,25 +25,46 @@ pub type MessageBack =
 pub fn initial() -> State {
   State(
     name: "My library",
-    books: map.from_list(
-      [
-        Book(
-          name: "Harry Potter",
-          id: 1451112,
-          contents: "Harry was a wizard...",
-        ),
-        Book(
-          name: "Pattern Recognition",
-          id: 7854155,
-          contents: "The fundamentals of AI lie in...",
-        ),
-        Book(
-          name: "Dictionary",
-          id: 472312,
-          contents: "A: first letter of the...",
-        ),
-      ]
-      |> list.map(fn(b: Book) { #(b.name, b) }),
+    books: [
+      Book(
+        name: "Harry Potter",
+        category: "Fantasy",
+        id: 1451112,
+        contents: "Harry was a wizard...",
+      ),
+      Book(
+        name: "Pattern Recognition",
+        category: "Science",
+        id: 7854155,
+        contents: "The fundamentals of AI lie in...",
+      ),
+      Book(
+        name: "Neuroscience for Beginners",
+        category: "Science",
+        id: 45424153,
+        contents: "The brain is a fascinating organ...",
+      ),
+      Book(
+        name: "Dictionary",
+        category: "English",
+        id: 472312,
+        contents: "A: first letter of the...",
+      ),
+    ]
+    |> list.fold(
+      map.new(),
+      fn(book: Book, curr: Map(String, List(Book))) {
+        curr
+        |> map.update(
+          book.category,
+          fn(entry: Result(List(Book), Nil)) {
+            case entry {
+              Ok(books) -> [book, ..books]
+              Error(_) -> [book]
+            }
+          },
+        )
+      },
     ),
   )
 }
@@ -58,34 +79,37 @@ pub fn handle(msg: Message, state: State) {
   )
 }
 
-fn print_state(new_books: Map(String, Book)) {
-  io.println(
-    "New State after that:"
-    |> string.append(string.concat(
-      new_books
-      |> map.keys
-      |> list.map(fn(name) { string.concat(["\n  - ", name]) }),
-    )),
-  )
-}
-
 fn handle_order(msg: Message, state: State) {
   let State(books: books, ..) = state
   assert Order(name: wanted, buyer: #(buyer, callback)) = msg
 
-  io.println(string.concat([buyer, " is trying to buy ", wanted]))
+  io.println(string.concat([buyer, " is trying to buy a ", wanted, " book"]))
 
   let found =
     books
     |> map.get(wanted)
+    |> result.map(list.head)
+    |> result.flatten
+
+  let _ =
+    found
+    |> result.map(fn(b: Book) {
+      io.println(string.concat([buyer, " bought ", b.name]))
+    })
 
   process.send(callback, found)
 
   let new_books =
     books
-    |> map.delete(wanted)
-
-  print_state(new_books)
+    |> map.update(
+      wanted,
+      fn(e) {
+        e
+        |> result.unwrap(or: [])
+        |> list.tail
+        |> result.unwrap(or: [])
+      },
+    )
 
   actor.Continue(State(..state, books: new_books))
 }
@@ -98,9 +122,15 @@ fn handle_return(msg: Message, state: State) {
 
   let new_books =
     books
-    |> map.insert(book.name, book)
-
-  print_state(new_books)
+    |> map.update(
+      book.category,
+      fn(cat: Result(List(Book), Nil)) {
+        case cat {
+          Ok(lst) -> [book, ..lst]
+          Error(_) -> [book]
+        }
+      },
+    )
 
   actor.Continue(State(..state, books: new_books))
 }

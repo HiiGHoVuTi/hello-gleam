@@ -68,7 +68,7 @@ pub fn order(_msg: Message, state: State) {
     |> result.flatten
     |> result.map(fn(acquired_book: library.Book) {
       state.books
-      |> map.insert(acquired_book.name, acquired_book)
+      |> map.insert(acquired_book.category, acquired_book)
     })
     |> result.unwrap(or: state.books)
 
