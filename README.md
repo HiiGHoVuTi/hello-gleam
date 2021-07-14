@@ -10,7 +10,7 @@ rebar3 shell
 > hellogleam:main().
 ```
 
-## Systems
+## Actors
 
 ### The Library
 
